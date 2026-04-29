@@ -89,24 +89,69 @@ export const BionicReaderPage: FC = () => {
   // 导出图片
   const exportAsImage = () => {
     const element = inputRef.current as unknown as HTMLElement;
-    if (!element) return;
+    if (!element) {
+      console.error('没有找到要导出的元素');
+      return;
+    }
 
-    const options = {
+    // 保存原始样式
+    const originalStyle = element.getAttribute('style') || '';
+    
+    // 临时设置样式，确保 html2canvas 能正确捕获
+    if (exportTransparent) {
+      element.style.backgroundColor = 'transparent';
+    } else {
+      element.style.backgroundColor = 'white';
+    }
+
+    // 使用更简单的配置，避免可能的问题
+    const options: any = {
       scale: exportResolution,
+      logging: true, // 启用日志以便调试
       useCORS: true,
-      logging: false,
-      backgroundColor: exportTransparent ? null : '#ffffff',
+      allowTaint: true,
     };
+    
+    // 只有在非透明模式下才设置 backgroundColor
+    if (!exportTransparent) {
+      options.backgroundColor = '#ffffff';
+    }
 
+    console.log('开始导出图片，选项：', options);
+    
     html2canvas(element, options)
       .then((canvas) => {
+        console.log('html2canvas 处理完成，canvas 尺寸：', canvas.width, 'x', canvas.height);
+        
+        // 恢复原始样式
+        element.setAttribute('style', originalStyle);
+        
+        // 确保 canvas 有内容
+        if (canvas.width === 0 || canvas.height === 0) {
+          console.error('生成的 canvas 尺寸为 0');
+          alert('导出失败：生成的图片尺寸为 0，请确保有内容可导出');
+          return;
+        }
+        
+        // 创建下载链接
         const link = document.createElement('a');
         link.download = FILE_IMAGE_NAME;
         link.href = canvas.toDataURL('image/png');
+        
+        // 确保链接被添加到 DOM 中
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
+        
+        console.log('图片下载已触发');
         setShowExportSettings(false);
       })
-      .catch((e) => console.error(e));
+      .catch((e) => {
+        console.error('导出图片失败：', e);
+        // 恢复原始样式
+        element.setAttribute('style', originalStyle);
+        alert('导出图片失败，请查看控制台了解详情');
+      });
   };
 
   // 净化文本
