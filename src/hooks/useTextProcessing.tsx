@@ -75,5 +75,7 @@ export const useTextProcessing = (isUnicode: boolean) => {
     onClickButton,
     processData,
     onChangeTextarea,
+    text,
+    setText,
   };
 };
