@@ -86,71 +86,75 @@ export const BionicReaderPage: FC = () => {
       .catch((e) => console.error(e));
   };
 
-  // 导出图片
+  // 导出图片 - 使用与 PDF 导出完全相同的基础逻辑
   const exportAsImage = () => {
-    const element = inputRef.current as unknown as HTMLElement;
-    if (!element) {
-      console.error('没有找到要导出的元素');
-      return;
-    }
-
-    // 保存原始样式
-    const originalStyle = element.getAttribute('style') || '';
+    console.log('导出图片按钮被点击');
     
-    // 临时设置样式，确保 html2canvas 能正确捕获
-    if (exportTransparent) {
-      element.style.backgroundColor = 'transparent';
-    } else {
-      element.style.backgroundColor = 'white';
-    }
-
-    // 使用更简单的配置，避免可能的问题
-    const options: any = {
-      scale: exportResolution,
-      logging: true, // 启用日志以便调试
-      useCORS: true,
-      allowTaint: true,
-    };
-    
-    // 只有在非透明模式下才设置 backgroundColor
-    if (!exportTransparent) {
-      options.backgroundColor = '#ffffff';
-    }
-
-    console.log('开始导出图片，选项：', options);
-    
-    html2canvas(element, options)
+    // 直接使用与 PDF 导出完全相同的方式调用 html2canvas
+    html2canvas(inputRef.current as unknown as HTMLElement)
       .then((canvas) => {
-        console.log('html2canvas 处理完成，canvas 尺寸：', canvas.width, 'x', canvas.height);
+        console.log('html2canvas 成功，canvas 尺寸:', canvas.width, 'x', canvas.height);
         
-        // 恢复原始样式
-        element.setAttribute('style', originalStyle);
-        
-        // 确保 canvas 有内容
+        // 检查 canvas 是否有效
         if (canvas.width === 0 || canvas.height === 0) {
-          console.error('生成的 canvas 尺寸为 0');
-          alert('导出失败：生成的图片尺寸为 0，请确保有内容可导出');
+          alert('导出失败：请确保先点击 "Convert" 按钮生成仿生阅读效果');
           return;
         }
         
-        // 创建下载链接
-        const link = document.createElement('a');
-        link.download = FILE_IMAGE_NAME;
-        link.href = canvas.toDataURL('image/png');
-        
-        // 确保链接被添加到 DOM 中
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        console.log('图片下载已触发');
-        setShowExportSettings(false);
+        // 1. 基础导出：先尝试最简单的方式
+        console.log('尝试基础导出...');
+        try {
+          const link = document.createElement('a');
+          link.download = FILE_IMAGE_NAME;
+          link.href = canvas.toDataURL('image/png');
+          
+          // 确保链接可点击
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          
+          // 触发点击
+          console.log('触发下载...');
+          link.click();
+          
+          // 清理
+          setTimeout(() => {
+            document.body.removeChild(link);
+            console.log('下载链接已清理');
+          }, 100);
+          
+          setShowExportSettings(false);
+          console.log('基础导出尝试完成');
+        } catch (error) {
+          console.error('基础导出失败:', error);
+          
+          // 2. 备用方案：使用不同的方法
+          console.log('尝试备用导出方案...');
+          try {
+            // 尝试使用 toBlob 方法
+            canvas.toBlob((blob) => {
+              if (blob) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = FILE_IMAGE_NAME;
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                console.log('备用方案导出成功');
+              } else {
+                alert('导出失败：无法生成图片数据');
+              }
+            }, 'image/png');
+          } catch (blobError) {
+            console.error('备用方案也失败:', blobError);
+            alert('导出图片失败，请尝试刷新页面后重试');
+          }
+        }
       })
-      .catch((e) => {
-        console.error('导出图片失败：', e);
-        // 恢复原始样式
-        element.setAttribute('style', originalStyle);
-        alert('导出图片失败，请查看控制台了解详情');
+      .catch((error) => {
+        console.error('html2canvas 处理失败:', error);
+        alert('导出图片失败：' + error.message);
       });
   };
 
