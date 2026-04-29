@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { timeout, toUnicodeVariant } from '../util';
 
-export const useTextProcessing = (isUnicode: boolean) => {
+export const useTextProcessing = (isUnicode: boolean, ignoreShortWords: number = 0) => {
   const [isDisabled, setIsDisabled] = useState(false);
   const [text, setText] = useState('');
   const [pretext, setPretext] = useState('');
@@ -25,7 +25,23 @@ export const useTextProcessing = (isUnicode: boolean) => {
         showNewLine = true;
       }
 
-      const mid = Math.floor(preElem.length / 2);
+      const cleanWord = preElem.replace(/[.,!?;:'"()\[\]{}]+$/, '');
+
+      if (ignoreShortWords > 0 && cleanWord.length <= ignoreShortWords) {
+        return (
+          <>
+            {showNewLine && (
+              <>
+                <br />
+                <br />
+              </>
+            )}
+            <span key={index}>{preElem}</span>
+          </>
+        );
+      }
+
+      const mid = Math.floor(preElem.length * 3 / 5);
 
       return (
         <>
@@ -75,5 +91,6 @@ export const useTextProcessing = (isUnicode: boolean) => {
     onClickButton,
     processData,
     onChangeTextarea,
+    text,
   };
 };
