@@ -55,12 +55,6 @@ export const BionicReaderPage: FC = () => {
   }, [textConfig]);
 
   useEffect(() => {
-    if (listPrepText.length > 0 && Object.keys(textConfig.wordConfigs).length > 0) {
-      const newList = processData();
-    }
-  }, [textConfig.wordConfigs]);
-
-  useEffect(() => {
     document.documentElement.style.setProperty(
       '--font-size-read-area',
       `${textConfig.fontSize / 16}rem`
