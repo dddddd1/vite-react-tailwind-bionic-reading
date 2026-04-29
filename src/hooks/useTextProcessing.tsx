@@ -13,54 +13,62 @@ export const useTextProcessing = (isUnicode: boolean, ignoreShortWords: number =
   };
 
   const processData = () => {
-    const prepText = text.split(' ');
-    console.log(prepText);
+    const paragraphs = text.split(/(\r?\n)/);
+    const listText: JSX.Element[] = [];
+    let elementIndex = 0;
 
-    const listText = prepText.map((elem, index) => {
-      let preElem = elem;
-      let showNewLine = false;
-      const match = /\r|\n/.exec(elem);
-      if (match) {
-        preElem = elem.trim();
-        showNewLine = true;
-      }
-
-      const cleanWord = preElem.replace(/[.,!?;:'"()\[\]{}]+$/, '');
-
-      if (ignoreShortWords > 0 && cleanWord.length <= ignoreShortWords) {
-        return (
-          <>
-            {showNewLine && (
-              <>
-                <br />
-                <br />
-              </>
-            )}
-            <span key={index}>{preElem}</span>
-          </>
+    paragraphs.forEach((paragraphPart) => {
+      if (paragraphPart === '\r\n' || paragraphPart === '\n') {
+        listText.push(
+          <span key={`newline-${elementIndex++}`}>
+            <br />
+            <br />
+          </span>
         );
+        return;
       }
 
-      const mid = Math.floor(preElem.length * 3 / 5);
+      if (paragraphPart === '') {
+        return;
+      }
 
-      return (
-        <>
-          {showNewLine && (
-            <>
-              <br />
-              <br />
-            </>
-          )}
-          {isUnicode ? (
-            <span key={index}>{toUnicodeVariant(preElem.slice(0, mid), 'bold')}</span>
-          ) : (
-            <span key={index} className='bio-letter'>
-              {preElem.slice(0, mid)}
+      const wordMatches = paragraphPart.match(/(\S+|\s+)/g) || [];
+      
+      wordMatches.forEach((word) => {
+        if (/^\s+$/.test(word)) {
+          listText.push(
+            <span key={`space-${elementIndex++}`}>{word}</span>
+          );
+          return;
+        }
+
+        const cleanWord = word.replace(/[.,!?;:'"()\[\]{}]+$/, '');
+
+        if (ignoreShortWords > 0 && cleanWord.length <= ignoreShortWords) {
+          listText.push(
+            <span key={`word-${elementIndex++}`}>{word}</span>
+          );
+          return;
+        }
+
+        const mid = Math.floor(word.length * 3 / 5);
+
+        if (isUnicode) {
+          listText.push(
+            <span key={`word-${elementIndex++}`}>
+              {toUnicodeVariant(word.slice(0, mid), 'bold')}
+              {word.slice(mid)}
             </span>
-          )}
-          {preElem.slice(mid)}
-        </>
-      );
+          );
+        } else {
+          listText.push(
+            <span key={`word-${elementIndex++}`}>
+              <span className='bio-letter'>{word.slice(0, mid)}</span>
+              {word.slice(mid)}
+            </span>
+          );
+        }
+      });
     });
 
     return listText;
