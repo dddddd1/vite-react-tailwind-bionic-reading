@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { timeout, toUnicodeVariant } from '../util';
 
 export type HighlightMode = 'first-letter' | 'first-two' | 'half' | 'three-fifths' | 'custom';
@@ -51,7 +51,7 @@ export const useTextProcessing = (
     setText(e?.target.value);
   };
 
-  const processData = () => {
+  const processData = useCallback(() => {
     const prepText = text.split(' ');
     console.log(prepText);
 
@@ -83,8 +83,8 @@ export const useTextProcessing = (
               key={index}
               className="bio-letter"
               style={{
-                color: wordConfig.highlightColor || undefined,
-                fontWeight: wordConfig.fontWeight || undefined,
+                color: wordConfig.highlightColor !== undefined ? wordConfig.highlightColor : undefined,
+                fontWeight: wordConfig.fontWeight !== undefined ? wordConfig.fontWeight : undefined,
               }}
             >
               {preElem.slice(0, mid)}
@@ -96,7 +96,14 @@ export const useTextProcessing = (
     });
 
     return listText;
-  };
+  }, [text, textConfig, isUnicode]);
+
+  useEffect(() => {
+    if (listPrepText.length > 0 && text.length > 0) {
+      const newList = processData();
+      setListPrepText(newList);
+    }
+  }, [textConfig.highlightMode, textConfig.customHighlightRatio, textConfig.wordConfigs, processData]);
 
   const onClickButton = async (e: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
     setPretext('processing...');
